@@ -62,14 +62,7 @@ finally
 return 0;
 
 
-// http://liaz-dakar.com/components/com_eventgallery/helpers/image.php?
-//   option=com_eventgallery
-//   mode=uncrop
-//   width=50
-//   view=resizeimage
-//   folder=LIAZ Dakar 90
-//   file=17.jpg
-// http://liaz-dakar.com/components/com_eventgallery/helpers/image.php?option=com_eventgallery&mode=full&view=resizeimage&folder=LIAZ Dakar 90&file=17.jpg
+// http://liaz-dakar.com/components/com_eventgallery/helpers/image.php?&width=1600&folder=LIAZ%20Dakar%2085&file=85-001.jpg
 async Task<Uri[]> GetAlbumPhotoLinks(Uri albumUri)
 {
     try
@@ -83,9 +76,9 @@ async Task<Uri[]> GetAlbumPhotoLinks(Uri albumUri)
         htmlDoc.LoadHtml(html);
 
         var urls =
-            htmlDoc.DocumentNode.Descendants("img")
-                .Where(node => string.IsNullOrWhiteSpace(node.GetAttributeValue("longdesc", "")) is false)
-                .Select(node => new Uri(HttpUtility.UrlDecode(node.GetAttributeValue("longdesc", ""))))
+            htmlDoc.DocumentNode.Descendants("a")
+                .Where(node => string.IsNullOrWhiteSpace(node.GetAttributeValue("data-eg-lightbox", "")) is false)
+                .Select(node => new Uri(HttpUtility.UrlDecode(node.GetAttributeValue("href", ""))))
                 .ToArray();
         return urls;
     }
@@ -131,10 +124,13 @@ async Task DownloadImageAsync(string outputDirectory, Uri imageUri)
 {
     // Extract file name
     var query = HttpUtility.ParseQueryString(WebUtility.HtmlDecode(imageUri.Query));
-    var file = query.Get("file") ?? "fake";
-    var newUri = new Uri($"http://liaz-dakar.com/components/com_eventgallery/helpers/image.php?option={query.Get("option")}&mode=full&view=resizeimage&folder={query.Get("folder")}&file={file}");
+    query.Set("width", "3200");
+    var file = query.Get("file") ?? null;
+    //var folder = query.Get("folder") ?? null;
+    var newUri = new Uri($"http://liaz-dakar.com/components/com_eventgallery/helpers/image.php?{query}");
 
-    var fileName = file.ToLower();
+
+    var fileName = file?.ToLower();
     if (string.IsNullOrEmpty(fileName))
     {
         Console.WriteLine($"Cannot parse file parameter from '{imageUri.Query}' query");
